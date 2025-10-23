@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>Generar Notificaciones</title>
+</head>
+
+<body>
+    <nav class="fixed top-4 left-0 right-0 mx-auto max-w-6xl 
+                h-16 
+                bg-blue-500 backdrop-blur-md 
+                text-white
+                flex items-center justify-between 
+                px-6 shadow-lg 
+                border border-gray-200/80 rounded-full">
+
+        <div class="flex items-center">
+            <img src="./images/logo.png" width="40" height="40" alt="Logo" />
+            <span class="ml-3 text-xl font-semibold">Generar notificaciones</span>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <a href="#" class="hover:text-blue-600">Inicio</a>
+            <a href="#" class="hover:text-blue-600">Prueba</a>
+        </div>
+    </nav>
+    <div class="flex items-center justify-center bg-gray-100 p-4 h-screen">
+        <div class="w-full max-w-3xl rounded-lg bg-white p-6 shadow-lg grid grid-cols-2 gap-6">
+
+            <form id="scrape-form">
+                <div class="mb-5">
+                    <label for="comparendos" class="block mb-2 text-sm font-medium text-gray-900">
+                        Comparendos</label>
+                    <textarea id="comparendos" name="comparendos"
+                        class="shadow-xs bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 h-48"
+                        placeholder="19001..." required></textarea>
+                </div>
+
+                <button type="submit" id="submit-button"
+                    class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                    Generar PDF
+                </button>
+            </form>
+
+            <div>
+                <h4 class="text-lg font-semibold">Resultados</h4>
+                <div id="resultados-container" class="mt-2 p-4 border rounded-lg bg-gray-50 h-full">
+                    <p class="text-sm text-gray-500">Aqu&iacute; se mostrar&aacute; el resultado...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('scrape-form');
+        const textarea = document.getElementById('comparendos');
+        const resultsContainer = document.getElementById('resultados-container');
+        const submitButton = document.getElementById('submit-button');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            resultsContainer.innerHTML = `<p class="text-sm text-blue-500">Generando reportes, por favor espera...</p>`;
+            submitButton.disabled = true;
+            submitButton.innerText = "Procesando...";
+
+            const textValue = textarea.value;
+            const dataArray = textValue
+                .split(/\r?\n/)
+                .filter(line => line.trim() !== '');
+
+            const payload = {
+                data: dataArray
+            };
+
+            try {
+                const response = await fetch('/api/v1/notificaciones', {
+                    method: 'POST',
+
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+
+                    body: JSON.stringify(payload)
+                });
+
+                const resultData = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(resultData.message || 'Error desconocido del servidor');
+                }
+
+                let failedItemsHtml = '';
+                if (resultData.failedItems && resultData.failedItems.length > 0) {
+                    failedItemsHtml = `
+                    <p class="text-sm font-medium text-red-700 mt-2">Items fallidos:</p>
+                    <ul class="list-disc list-inside text-xs text-red-600">
+                        ${resultData.failedItems.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                `;
+                }
+
+                resultsContainer.innerHTML = `
+                <p class="text-sm font-semibold text-green-700">${resultData.message}</p>
+                <p class="text-sm text-gray-600 mt-2"><b>Completados:</b> ${resultData.successCount}</p>
+                <p class="text-sm text-gray-600"><b>Fallidos:</b> ${resultData.failureCount}</p>
+                ${failedItemsHtml}
+            `;
+
+            } catch (error) {
+                resultsContainer.innerHTML = `
+                <p class="text-sm font-semibold text-red-700">Error en la solicitud:</p>
+                <p class="text-sm text-red-600">${error.message}</p>
+            `;
+            } finally {
+                submitButton.disabled = false;
+                submitButton.innerText = "Generar PDF";
+            }
+        });
+    </script>
+</body>
+
+</html>
