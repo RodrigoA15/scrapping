@@ -6,7 +6,9 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.listen(PORT, (error) => {
+const HOST = process.env.HOST_PRODUCTION;
+
+app.listen(PORT, HOST, (error) => {
   if (error) {
     console.log(`error server: ${error}`);
   } else {
