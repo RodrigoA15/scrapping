@@ -60,8 +60,7 @@ const runScrapingProcess = async (data) => {
   const PDF_SAVE_PATH = path.join(
     "\\\\192.168.28.100",
     "\\Compartida",
-    "\\programacion y datos",
-    "\\RodrigoJR",
+    "\\Notificaciones_Comparendo",
     year,
     month,
     day
@@ -80,7 +79,8 @@ const runScrapingProcess = async (data) => {
 
   try {
     browser = await puppeteer.launch({
-      headless: false,
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
     const page = await browser.newPage();
